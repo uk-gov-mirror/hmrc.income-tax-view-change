@@ -17,7 +17,7 @@
 package connectors
 
 import config.MicroserviceAppConfig
-import connectors.httpParsers.PaymentAllocationsHttpParser.{PaymentAllocationsReads, PaymentAllocationsResponse}
+import connectors.httpParsers.PaymentAllocationsHttpParser._
 import javax.inject.Inject
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.logging.Authorization
@@ -45,12 +45,27 @@ class PaymentAllocationsConnector @Inject()(val http: HttpClient,
     )
   }
 
+  private[connectors] def queryFromToParameters(from: String, to: String): Seq[(String, String)] = {
+    Seq(
+      "dateFrom" -> from,
+      "dateTo" -> to
+    )
+  }
+
   def getPaymentAllocations(nino: String, paymentLot: String, paymentLotItem: String)
                            (implicit hc: HeaderCarrier): Future[PaymentAllocationsResponse] = {
     http.GET(
       url = paymentAllocationsUrl(nino),
       queryParams = queryParameters(paymentLot, paymentLotItem)
     )(PaymentAllocationsReads, desHeaderCarrier, ec)
+  }
+
+  def getPreviousPayments(nino: String, from: String, to: String)
+                         (implicit  hc: HeaderCarrier): Future[PreviousPaymentsResponse] = {
+    http.GET(
+      url = paymentAllocationsUrl(nino),
+      queryParams = queryFromToParameters(from, to)
+    )(PreviousPaymentsReads, desHeaderCarrier, ec)
   }
 
 }

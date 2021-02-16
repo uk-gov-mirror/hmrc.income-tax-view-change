@@ -30,6 +30,8 @@ object PaymentAllocationsHttpParser extends ResponseHttpParsers {
 
   type PaymentAllocationsResponse = Either[PaymentAllocationsError, PaymentAllocations]
 
+  type PreviousPaymentsResponse = Either[PaymentAllocationsError, PaymentDetails]
+
   implicit object PaymentAllocationsReads extends HttpReads[PaymentAllocationsResponse] {
     override def read(method: String, url: String, response: HttpResponse): PaymentAllocationsResponse = {
       response.status match {
@@ -41,7 +43,7 @@ object PaymentAllocationsHttpParser extends ResponseHttpParsers {
               case None => Left(UnexpectedResponse)
             }
             case JsError(errors) =>
-              Logger.error(s"[PaymentAllocationsReads][read] Json validation error. Reasons: ${errors}")
+              Logger.error(s"[PaymentAllocationsReads][read] Json validation error. Reasons: $errors")
               Left(UnexpectedResponse)
           }
         case status if status >= 400 && status < 500 =>
@@ -49,6 +51,28 @@ object PaymentAllocationsHttpParser extends ResponseHttpParsers {
           Left(UnexpectedResponse)
         case status =>
           Logger.error(s"[PaymentAllocationsReads][read] Unexpected Response with status: $status")
+          Left(UnexpectedResponse)
+      }
+    }
+  }
+
+  implicit object PreviousPaymentsReads extends HttpReads[PreviousPaymentsResponse] {
+    override def read(method:String, url: String, response: HttpResponse): PreviousPaymentsResponse = {
+      response.status match {
+        case OK =>
+          Logger.info("[PreviousPaymentsReads][read] successfully parsed response to Seq[PaymentDetails]")
+          response.json.validate[PaymentDetails] match {
+            case JsSuccess(result, _) => result
+            case JsError(errors) =>
+              Logger.error(s"[PreviousPaymentsReads][read] Json validation error. Reasons: $errors")
+              Left(UnexpectedResponse)
+          }
+          Right(response.json.as[PaymentDetails])
+        case status if status >= 400 && status <500 =>
+          Logger.error(s"[PreviousPaymentsReads][read] $status returned from DES with body: ${response.body}")
+          Left(UnexpectedResponse)
+        case status =>
+          Logger.error(s"[PreviousPaymentsReads][read] Unexpected Response with status: $status")
           Left(UnexpectedResponse)
       }
     }

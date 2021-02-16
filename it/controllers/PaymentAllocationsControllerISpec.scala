@@ -19,7 +19,7 @@ package controllers
 import assets.BaseIntegrationTestConstants._
 import helpers.ComponentSpecBase
 import helpers.servicemocks.DesPaymentAllocationsStub._
-import models.paymentAllocations.{AllocationDetail, PaymentAllocations}
+import models.paymentAllocations.{AllocationDetail, PaymentAllocations, PaymentDetails}
 import play.api.http.Status._
 import play.api.libs.json.{JsObject, Json}
 import play.api.libs.ws.WSResponse
@@ -28,6 +28,9 @@ class PaymentAllocationsControllerISpec extends ComponentSpecBase {
 
   val paymentLot: String = "paymentLot"
   val paymentLotItem: String = "paymentLotItem"
+
+  val from: String = "from"
+  val to: String = "to"
 
   val paymentAllocations: PaymentAllocations = PaymentAllocations(
     amount = Some(1000.00),
@@ -44,6 +47,10 @@ class PaymentAllocationsControllerISpec extends ComponentSpecBase {
         clearedAmount = Some(500.00)
       )
     )
+  )
+
+  val paymentDetails: PaymentDetails = PaymentDetails(
+    Seq(paymentAllocations)
   )
 
   val paymentAllocationsJson: JsObject = Json.obj(
@@ -105,6 +112,30 @@ class PaymentAllocationsControllerISpec extends ComponentSpecBase {
         Then("an internal server error response is returned")
         res should have(
           httpStatus(INTERNAL_SERVER_ERROR)
+        )
+      }
+    }
+  }
+
+  s"GET ${controllers.routes.PaymentAllocationsController.getPreviousPayments(testNino, from, to)}" should {
+    s"return $OK" when {
+      "previous payments are successfully retrieved" in {
+        Given("the user is authorised")
+        isAuthorised(true)
+
+        And("the call to retrieve payment allocations is stubbed")
+        stubGetPreviousPayments(testNino, from, to)(
+          status = OK,
+          response = paymentAllocationsJson
+        )
+
+        When(s"I call GET ${controllers.routes.PaymentAllocationsController.getPreviousPayments(testNino, from, to)}")
+        val res: WSResponse = IncomeTaxViewChange.getPreviousPayments(testNino, from, to)
+
+        Then("a successful response is returned with the previous payments")
+        res should have(
+          httpStatus(OK),
+          jsonBodyMatching(Json.toJson(paymentDetails))
         )
       }
     }

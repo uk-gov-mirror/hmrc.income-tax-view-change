@@ -25,8 +25,16 @@ object DesPaymentAllocationsStub {
     s"/cross-regime/payment-allocation/NINO/$nino/ITSA?paymentLot=$paymentLot&paymentLotItem=$paymentLotItem"
   }
 
+  private def fromToUrl(nino: String, from: String, to: String): String = {
+    s"/cross-regime/payment-allocation/NINO/$nino/ITSA?dateFrom=$from&dateTo=$to"
+  }
+
   def stubGetPaymentAllocations(nino: String, paymentLot: String, paymentLotItem: String)(status: Int, response: JsValue = Json.obj()): Unit = {
     WiremockHelper.stubGet(url(nino, paymentLot, paymentLotItem), status, response.toString)
+  }
+
+  def stubGetPreviousPayments(nino: String, from: String, to: String)(status: Int, response: JsValue = Json.obj()): Unit = {
+    WiremockHelper.stubGet(fromToUrl(nino, from, to), status, response.toString)
   }
 
   def verifyGetPaymentAllocations(nino: String, paymentLot: String, paymentLotItem: String): Unit = {

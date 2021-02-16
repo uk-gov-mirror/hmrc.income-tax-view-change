@@ -44,4 +44,17 @@ class PaymentAllocationsController @Inject()(authentication: AuthenticationPredi
     }
   }
 
+  def getPreviousPayments(nino: String, from: String, to: String): Action[AnyContent] = {
+    authentication.async { implicit request =>
+      paymentAllocationsConnector.getPreviousPayments(
+        nino = nino,
+        from = from,
+        to = to
+      ) map {
+        case Right(previousPayments) => Ok(Json.toJson(previousPayments))
+        case Left(_) => InternalServerError("Failed to retrieve previous payment allocations")
+      }
+    }
+  }
+
 }
